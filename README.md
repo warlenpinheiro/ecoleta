@@ -8,7 +8,7 @@
 
 <p align="center"> <img src="media/ecoleta.png" alt="ecoleta" height="250"> </p>
 
-<p align="center"> Using the power of a powerful stack, the use of a single popular and modern language, the <img src="media/javascript.png" height="18" alt="javascript"> JavaScript using TypeScript<img src="media/typescript.png" alt="typescript">. <br> Productivity, performance and security. </p>
+<p align="center"> Using the power of a powerful stack, the use of a single popular and modern language, the <img src="media/js.png" height="18" alt="javascript"> JavaScript using TypeScript<img src="media/typescript.png" alt="typescript" height="18">. <br> Productivity, performance and security. </p>
 
 ---
 
