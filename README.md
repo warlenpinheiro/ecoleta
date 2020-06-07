@@ -23,7 +23,7 @@ Run ``` npm install``` in the backend, frontend and mobile folders to install th
 
 Run ``` npm start``` in the backend and frontend folders to use the web version. Access via ** localhost: 3000 **.
 
-Run ```npm start``` in the backend and mobile folders, go to ** localhost: 19002 **, read the QR Code on your phone and use the application <img src =" media / expo.png "alt =" rocketseat "height =" 20 "> Expo to run the mobile version on your smartphone. Or with an Android / iOS emulator to run on your computer.
+Run ```npm start``` in the backend and mobile folders, go to ** localhost: 19002 **, read the QR Code on your phone and use the application <img src="media/expo.png" alt="rocketseat" height ="20"> Expo to run the mobile version on your smartphone. Or with an Android / iOS emulator to run on your computer.
 
 ## Telas
 
