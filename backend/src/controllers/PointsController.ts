@@ -1,117 +1,104 @@
-import { Request, Response } from 'express';
-import knex from '../database/connection';
+import { Request, Response } from "express";
+import knex from "../database/connection";
 
-class PointsController {
-
+class PoitsController {
   async index(request: Request, response: Response) {
     const { city, uf, items } = request.query;
 
     const parsedItems = String(items)
-      .split(',')
+      .split(",")
       .map(item => Number(item.trim()));
 
-    const points = await knex('points')
-      .join('point_items', 'points.id', '=', 'point_items.point_id')
-      .whereIn('point_items.item_id', parsedItems)
-      .where('city', String(city))
-      .where('uf', String(uf))
+    const points = await knex("points")
+      .join("point_items", "points.id", "=", "point_items.point_id")
+      .whereIn("point_items.item_id", parsedItems)
+      .where("city", String(city))
+      .where("uf", String(uf))
       .distinct()
-      .select('points.*');
+      .select("points.*");
 
+    const serializedPoints = points.map(point => {
+      return {
+        ...point,
+        image_url: `http://192.168.0.108:3333/uploads/points/${point.image}`
+      };
+    });
 
-    return response.json(points);
+    return response.json(serializedPoints);
   }
 
   async show(request: Request, response: Response) {
     const { id } = request.params;
-    
-    const point = await knex('points').where('id', id).first();
 
-    if(!point) {
-      return response.status(400).json({ message: 'Point not found.' });
+    const point = await knex("points").where("id", id).first();
+
+    if (!point) {
+      return response.status(400).json({ message: "Point not found" });
     }
+    const serializedPoint = {
+      ...point,
+      image_url: `http://192.168.0.108:3333/uploads/points/${point.image}`
+    };
 
-    const items = await knex('items')
-      .join('point_items', 'items.id', '=', 'points_items.item_id')
-      .where('point_items.point_id', id);
+    const items = await knex("items")
+      .join("point_items", "items.id", "=", "point_items.item_id")
+      .where("point_items.point_id", id)
+      .select("items.title");
 
-    const address = await knex('address').where('id', point.address_id).first();
-
-    return response.json({point, items, address});
+    return response.json({ point: serializedPoint, items });
   }
 
   async create(request: Request, response: Response) {
     const {
       name,
-      whatsapp,
       email,
-      cep,
-      number,
-      city,
-      uf,
-      logradouro,
-      bairro,
+      whatsapp,
       latitude,
       longitude,
+      city,
+      uf,
       items
     } = request.body;
 
-    const address = {
-      cep,
-      number,
-      city,
-      uf,
-      logradouro,
-      bairro,
-      latitude,
-      longitude
-    }
+    const trx = await knex.transaction();
 
     const point = {
+      image: request.file.filename,
       name,
-      whatsapp,
       email,
-      address
-    }
-  
-    const trx = await knex.transaction();
-  
-  
-    const ids = await trx('address').insert({
-      cep,
-      number,
-      city,
-      uf,
-      logradouro,
-      bairro,
+      whatsapp,
       latitude,
-      longitude
-    });
-  
-    const ids_points = await trx('points').insert({
-      image: 'https://www.proaresiduos.com.br/wp-content/uploads/2014/11/o-que-e-coleta-residuos.jpg',
-      name,
-      whatsapp,
-      email,
-      address_id: ids[0]
-    });
-  
-    const point_items = items.map( (item_id: number) => {
-      return {
-        item_id,
-        point_id: ids_points[0]
-      };
-    });
-  
-    await trx('point_items').insert(point_items);
+      longitude,
+      city,
+      uf
+    };
+
+    const insertedIds = await trx("points").insert(point);
+
+    const point_id = insertedIds[0];
+
+    const pointItems = items
+      .split(",")
+      .map((item: string) => Number(item.trim()))
+      .map((item_id: number) => {
+        return {
+          item_id,
+          point_id
+        };
+      });
+
+    await trx("point_items")
+      .insert(pointItems)
+      .then(inserts => {
+        console.log("\x1b[32m%s\x1b[0m", inserts.length + " new point saved");
+      });
 
     await trx.commit();
 
     return response.json({
-      id: ids_points[0],
+      id: point_id,
       ...point
     });
   }
 }
-
-export default PointsController;
+export default PoitsController;

@@ -1,4 +1,5 @@
-import knex from 'knex';
+import knex from "knex";
+import path from "path";
 
 const connection = knex({
   client: 'mysql',
@@ -8,7 +9,7 @@ const connection = knex({
     user : 'root',
     password : 'teste123',
     database : 'ecoleta'
-  }
+  },
+  useNullAsDefault: true
 });
-
 export default connection;
