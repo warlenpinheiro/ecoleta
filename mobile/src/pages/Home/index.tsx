@@ -1,26 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Feather as Icon } from "@expo/vector-icons";
 import {
+  View,
   ImageBackground,
   StyleSheet,
   Image,
   Text,
-  View,
   TextInput,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Feather as Icon } from "@expo/vector-icons";
-import { RectButton } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 
-const Home = () => {
-  const navigation = useNavigation();
+import { RectButton } from "react-native-gesture-handler";
 
+const Home: React.FC = () => {
   const [uf, setUf] = useState("");
   const [city, setCity] = useState("");
 
+  const navigation = useNavigation();
+
   function handleNavigateToPoints() {
-    navigation.navigate("Points", { uf, city });
+    navigation.navigate("Points", {
+      uf,
+      city,
+    });
   }
 
   return (
@@ -29,13 +33,15 @@ const Home = () => {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ImageBackground
-        style={styles.container}
         source={require("../../assets/home-background.png")}
-        imageStyle={{ width: 274, height: 368 }}
+        style={styles.container}
+        imageStyle={{
+          width: 274,
+          height: 368,
+        }}
       >
         <View style={styles.main}>
           <Image source={require("../../assets/logo.png")} />
-
           <View>
             <Text style={styles.title}>
               Seu marketplace de coleta de resíduos
@@ -46,26 +52,27 @@ const Home = () => {
             </Text>
           </View>
         </View>
-
         <View style={styles.footer}>
           <TextInput
             style={styles.input}
-            placeholder="Selecione a UF"
-            autoCapitalize="characters"
-            maxLength={2}
-            autoCorrect={false}
             value={uf}
             onChangeText={setUf}
+            maxLength={2}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            placeholder="Digite a UF"
           />
           <TextInput
             style={styles.input}
-            placeholder="Selecione a Cidade"
+            placeholder="Digite a cidade"
             value={city}
-            autoCapitalize="words"
+            autoCorrect={false}
             onChangeText={setCity}
           />
-
-          <RectButton style={styles.button} onPress={handleNavigateToPoints}>
+          <RectButton
+            style={styles.button}
+            onPress={() => handleNavigateToPoints()}
+          >
             <View style={styles.buttonIcon}>
               <Icon name="arrow-right" color="#fff" size={24} />
             </View>

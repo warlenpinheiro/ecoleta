@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from "react";
 import {
-  StyleSheet,
   View,
+  Text,
+  StyleSheet,
   TouchableOpacity,
   Image,
-  Text,
   SafeAreaView,
   Linking,
 } from "react-native";
-import { Feather as Icon, FontAwesome5 } from "@expo/vector-icons";
+
 import { useNavigation, useRoute } from "@react-navigation/native";
+import { Feather as Icon } from "@expo/vector-icons";
+import { FontAwesome } from "@expo/vector-icons";
 import { RectButton } from "react-native-gesture-handler";
+
 import * as MailComposer from "expo-mail-composer";
 
 import api from "../../services/api";
 
-interface RouteParams {
+interface Params {
   point_id: number;
 }
 
@@ -24,28 +27,33 @@ interface Data {
     image: string;
     name: string;
     email: string;
-    wpp: string;
+    whatsapp: string;
     city: string;
     uf: string;
   };
-  items: { title: string }[];
+  items: {
+    title: string;
+  }[];
 }
 
-const Detail = () => {
+const Detail: React.FC = () => {
+  const [data, setData] = useState<Data>({} as Data);
   const navigation = useNavigation();
   const route = useRoute();
 
-  const [data, setData] = useState<Data>({} as Data);
-
-  const routeParams = route.params as RouteParams;
+  const routeParams = route.params as Params;
 
   useEffect(() => {
-    api.get(`points/${routeParams.point_id}`).then((res) => {
-      setData(res.data);
-    });
+    async function loadPoint() {
+      const response = await api.get(`/points/${routeParams.point_id}`);
+
+      setData(response.data);
+    }
+
+    loadPoint();
   }, []);
 
-  function handleNavigationBack() {
+  function handleNavigateBack() {
     navigation.goBack();
   }
 
@@ -56,16 +64,19 @@ const Detail = () => {
     });
   }
 
-  function handleWhatsapp() {
-    Linking.openURL(`whatsapp://send?phone${data.point.wpp}`);
+  function handleWhatsApp() {
+    Linking.openURL(
+      `whatsapp://send?phone=${data.point.whatsapp}&text=Tenho interesse na coleta de resíduos`
+    );
   }
-
-  if (!data.point) return null;
+  if (!data.point) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.container}>
-        <TouchableOpacity onPress={handleNavigationBack}>
+        <TouchableOpacity onPress={handleNavigateBack}>
           <Icon name="arrow-left" size={20} color="#34cb79" />
         </TouchableOpacity>
 
@@ -75,12 +86,13 @@ const Detail = () => {
             uri: data.point.image,
           }}
         />
+
         <Text style={styles.pointName}>{data.point.name}</Text>
         <Text style={styles.pointItems}>
           {data.items.map((item) => item.title).join(",")}
         </Text>
 
-        <View>
+        <View style={styles.address}>
           <Text style={styles.addressTitle}>Endereço</Text>
           <Text style={styles.addressContent}>
             {data.point.city}, {data.point.uf}
@@ -88,12 +100,11 @@ const Detail = () => {
         </View>
       </View>
       <View style={styles.footer}>
-        <RectButton style={styles.button} onPress={handleWhatsapp}>
-          <FontAwesome5 name="whatsapp" size={20} color="#fff" />
+        <RectButton style={styles.button} onPress={() => handleWhatsApp()}>
+          <FontAwesome name="whatsapp" size={20} color="#fff" />
           <Text style={styles.buttonText}>Whatsapp</Text>
         </RectButton>
-
-        <RectButton style={styles.button} onPress={handleComposeMail}>
+        <RectButton style={styles.button} onPress={() => handleComposeMail()}>
           <Icon name="mail" size={20} color="#fff" />
           <Text style={styles.buttonText}>E-mail</Text>
         </RectButton>
@@ -154,7 +165,6 @@ const styles = StyleSheet.create({
     borderColor: "#999",
     paddingVertical: 20,
     paddingHorizontal: 32,
-    paddingBottom: 0,
     flexDirection: "row",
     justifyContent: "space-between",
   },

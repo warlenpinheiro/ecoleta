@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
+import { useNavigation, useRoute } from "@react-navigation/native";
+
 import {
-  StyleSheet,
   View,
+  StyleSheet,
   TouchableOpacity,
   Text,
   ScrollView,
   Image,
-  SafeAreaView,
   Alert,
-  Dimensions,
 } from "react-native";
-import { Feather as Icon } from "@expo/vector-icons";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { SvgUri } from "react-native-svg";
-import MapView, { Marker } from "react-native-maps";
-import * as Location from "expo-location";
 
+import { Feather as Icon } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import MapView, { Marker } from "react-native-maps";
+import { SvgUri } from "react-native-svg";
 import api from "../../services/api";
+
+import * as Location from "expo-location";
 
 interface Item {
   id: number;
@@ -27,55 +28,38 @@ interface Item {
 interface Point {
   id: number;
   name: string;
+  latitude: number;
+  longitude: number;
   image: string;
-  lat: number;
-  long: number;
 }
 
-interface PointParams {
+interface Params {
   uf: string;
   city: string;
 }
 
 const Points: React.FC = () => {
-  const navigation = useNavigation();
-
-  const route = useRoute();
-
-  const routeParams = route.params as PointParams;
-
   const [items, setItems] = useState<Item[]>([]);
   const [points, setPoints] = useState<Point[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-
-  const [mapLayout, setMapLayout] = useState(false);
-
   const [initialPosition, setInitialPosition] = useState<[number, number]>([
     0,
     0,
   ]);
+  const navigation = useNavigation();
+  const route = useRoute();
 
-  function handleNavigationBack() {
-    navigation.goBack();
-  }
-
-  function handleNavigationToDetail(id: number) {
-    navigation.navigate("Detail", { point_id: id });
-  }
+  const routeParams = route.params as Params;
 
   useEffect(() => {
-    api
-      .get("points", {
-        params: {
-          city: routeParams.city,
-          uf: routeParams.uf,
-          items: selectedItems,
-        },
-      })
-      .then((res) => {
-        setPoints(res.data);
-      });
-  }, [selectedItems]);
+    async function loadPoints() {
+      const response = await api.get("/items");
+
+      setItems(response.data);
+    }
+
+    loadPoints();
+  }, []);
 
   useEffect(() => {
     async function loadPosition() {
@@ -83,13 +67,13 @@ const Points: React.FC = () => {
 
       if (status !== "granted") {
         Alert.alert(
-          "Oooops...",
+          "Ooooops...",
           "Precisamos de sua permissão para obter a localização"
         );
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync();
+      const location = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
 
       const { latitude, longitude } = location.coords;
 
@@ -97,32 +81,48 @@ const Points: React.FC = () => {
     }
 
     loadPosition();
-  }, []);
+  });
 
   useEffect(() => {
-    api.get("items").then((res) => {
-      setItems(res.data);
-    });
-  }, []);
+    async function loadPoints() {
+      const response = await api.get("/points", {
+        params: {
+          city: routeParams.city,
+          uf: routeParams.uf,
+          items: selectedItems,
+        },
+      });
 
-  function handleSelectedItems(id: number) {
+      setPoints(response.data);
+    }
+
+    loadPoints();
+  }, [selectedItems]);
+
+  function handleNavigateBack() {
+    navigation.goBack();
+  }
+
+  function handleNavigateToDetail(id: number) {
+    navigation.navigate("Detail", { point_id: id });
+  }
+
+  function handleSelectItem(id: number) {
     const alreadySelected = selectedItems.findIndex((item) => item === id);
 
-    if (alreadySelected > -1) {
+    if (alreadySelected >= 0) {
       const filteredItems = selectedItems.filter((item) => item !== id);
 
       setSelectedItems(filteredItems);
-    } else setSelectedItems([...selectedItems, id]);
-  }
-
-  function handleMapLayout() {
-    setMapLayout(true);
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
   }
 
   return (
-    <SafeAreaView>
+    <>
       <View style={styles.container}>
-        <TouchableOpacity onPress={handleNavigationBack}>
+        <TouchableOpacity onPress={handleNavigateBack}>
           <Icon name="arrow-left" size={20} color="#34cb79" />
         </TouchableOpacity>
 
@@ -135,7 +135,6 @@ const Points: React.FC = () => {
           {initialPosition[0] !== 0 && (
             <MapView
               style={styles.map}
-              onMapReady={handleMapLayout}
               initialRegion={{
                 latitude: initialPosition[0],
                 longitude: initialPosition[1],
@@ -143,54 +142,56 @@ const Points: React.FC = () => {
                 longitudeDelta: 0.014,
               }}
             >
-              {mapLayout &&
-                points.map((point) => (
-                  <Marker
-                    key={String(point.id)}
-                    onPress={() => handleNavigationToDetail(point.id)}
-                    style={styles.mapMarker}
-                    coordinate={{
-                      latitude: point.lat,
-                      longitude: point.long,
-                    }}
-                  >
-                    <View style={styles.mapMarkerContainer}>
-                      <Image
-                        source={{
-                          uri: point.image,
-                        }}
-                        style={styles.mapMarkerImage}
-                      />
-                      <Text style={styles.mapMarkerTitle}>{point.name}</Text>
-                    </View>
-                  </Marker>
-                ))}
+              {points.map((point) => (
+                <Marker
+                  key={String(point.id)}
+                  style={styles.mapMarker}
+                  onPress={() => handleNavigateToDetail(point.id)}
+                  coordinate={{
+                    latitude: point.latitude,
+                    longitude: point.longitude,
+                  }}
+                >
+                  <View style={styles.mapMarkerContainer}>
+                    <Image
+                      style={styles.mapMarkerImage}
+                      source={{
+                        uri: point.image,
+                      }}
+                    />
+                    <Text style={styles.mapMarkerTitle}>{point.name}</Text>
+                  </View>
+                </Marker>
+              ))}
             </MapView>
           )}
         </View>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20 }}
-      >
-        {items.map((item) => (
-          <View style={styles.itemsContainer} key={String(item.id)}>
+      <View style={styles.itemsContainer}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 32,
+          }}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        >
+          {items.map((item) => (
             <TouchableOpacity
+              key={String(item.id)}
               style={[
                 styles.item,
                 selectedItems.includes(item.id) ? styles.selectedItem : {},
               ]}
-              onPress={() => handleSelectedItems(item.id)}
+              onPress={() => handleSelectItem(item.id)}
               activeOpacity={0.6}
             >
               <SvgUri width={42} height={42} uri={item.image_url} />
               <Text style={styles.itemTitle}>{item.title}</Text>
             </TouchableOpacity>
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+          ))}
+        </ScrollView>
+      </View>
+    </>
   );
 };
 
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 32,
-    paddingTop: 20,
+    paddingTop: 20 + Constants.statusBarHeight,
   },
 
   title: {
@@ -225,7 +226,6 @@ const styles = StyleSheet.create({
   map: {
     width: "100%",
     height: "100%",
-    flex: 1,
   },
 
   mapMarker: {
